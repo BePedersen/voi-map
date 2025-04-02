@@ -121,7 +121,7 @@ zones_sorted = sorted(zones, key=lambda z: z["count"], reverse=True)
 # --- Build stats HTML overlay ---
 table_html = f"""
 <div style="position: fixed; top: 10px; left: 10px; z-index: 9999;
-    background-color: white; padding: 10px; border: 1px solid #888; font-size: 14px; max-height: 500px; overflow-y: auto;">
+    background-color: white; padding: 10px; border: 1px solid #888; font-size: 14px; max-height: 600px; overflow-y: auto;">
     <b>🛴 Scooter Count</b><br>
     Total scooters: <b>{total_scooters}</b><br>
     Out-ride-fence: <b>{out_of_zones}</b><br>
