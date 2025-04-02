@@ -6,7 +6,7 @@ from folium import Element, CustomIcon
 
 # --- Config ---
 kml_path = "zone_ops.kml"
-output_html = "voi_scooters_map.html"
+output_html = "index.html"
 icon_paths = {
     "yellow": "scooter_icon_refined_yellow.png",
     "brown": "scooter_icon_refined_brown.png",
