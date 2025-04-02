@@ -208,6 +208,30 @@ category_html = f"""
 
 fmap.get_root().html.add_child(Element(category_html))
 
+# --- Title box ---
+title_html = """
+<div style="
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    padding: 12px 24px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    border: 1px solid #eee;
+">
+    VOI Fleet Bergen
+</div>
+"""
+
+fmap.get_root().html.add_child(Element(title_html))
+
 # --- Save map ---
 fmap.save(output_html)
 print(f"✅ Map saved as '{output_html}' with updated battery categories")
