@@ -10,7 +10,7 @@ output_html = "index.html"
 map_center = [60.3913, 5.3221]
 
 # --- Create map ---
-fmap = folium.Map(location=map_center, zoom_start=13)
+fmap = folium.Map(location=map_center, zoom_start=13, zoom_control=False, control_scale=False)
 
 # --- Load KML zones ---
 ns = {'kml': 'http://www.opengis.net/kml/2.2'}
@@ -195,12 +195,12 @@ category_html = f"""
     <p style="margin: 4px 0; color: green;"><strong>Availability:</strong> {availability_percent:.1f}%</p>
     <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
         <tbody>
-            <tr><td style="padding: 6px 0;">🖤 <span style='color:#333;'>Critical low &lt; 4%</span></td><td style="text-align: right; font-family: monospace;">{black_count}</td></tr>
-            <tr><td style="padding: 6px 0;">🤎 <span style='color:#6e4b3a;'>Superlow 4–10%</span></td><td style="text-align: right; font-family: monospace;">{brown_count}</td></tr>
-            <tr><td style="padding: 6px 0;">🧡 <span style='color:#e67e22;'>10–25%</span></td><td style="text-align: right; font-family: monospace;">{orange_count}</td></tr>
-            <tr><td style="padding: 6px 0;">💛 <span style='color:#f1c40f;'>25–55%</span></td><td style="text-align: right; font-family: monospace;">{yellow_count}</td></tr>
-            <tr><td style="padding: 6px 0;">💚 <span style='color:#27ae60;'>Good &gt; 55%</span></td><td style="text-align: right; font-family: monospace;">{green_count}</td></tr>
-            <tr><td style="padding: 6px 0;">🔴 <span style='color:#e74c3c;'>Broken (&gt;10% + disabled)</span></td><td style="text-align: right; font-family: monospace;">{red_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#333;'>Critical low &lt; 4%</span></td><td style="text-align: right; font-family: monospace;">{black_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#6e4b3a;'>Superlow 4–10%</span></td><td style="text-align: right; font-family: monospace;">{brown_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#e67e22;'>10–25%</span></td><td style="text-align: right; font-family: monospace;">{orange_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#f1c40f;'>25–55%</span></td><td style="text-align: right; font-family: monospace;">{yellow_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#27ae60;'>Good &gt; 55%</span></td><td style="text-align: right; font-family: monospace;">{green_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#e74c3c;'>Broken (&gt;10% + disabled)</span></td><td style="text-align: right; font-family: monospace;">{red_count}</td></tr>
         </tbody>
     </table>
 </div>
