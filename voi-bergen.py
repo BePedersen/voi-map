@@ -1,4 +1,133 @@
-# --- Left box: Zone counts ---
+import folium
+import requests
+import xml.etree.ElementTree as ET
+from shapely.geometry import Point, Polygon
+from folium import Element, CustomIcon
+
+# --- Config ---
+kml_path = "zone_ops.kml"
+output_html = "index.html"
+map_center = [60.3913, 5.3221]
+
+# --- Create map ---
+fmap = folium.Map(location=map_center, zoom_start=13)
+
+# --- Load KML zones ---
+ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+tree = ET.parse(kml_path)
+root = tree.getroot()
+
+zones = []
+for placemark in root.findall(".//kml:Placemark", ns):
+    name = placemark.find("kml:name", ns).text
+    polygon_elem = placemark.find(".//kml:Polygon", ns)
+    if polygon_elem is None:
+        continue
+
+    coords = []
+    for coord_string in polygon_elem.findall(".//kml:coordinates", ns):
+        coord_list = coord_string.text.strip().split()
+        ring = [(float(c.split(',')[1]), float(c.split(',')[0])) for c in coord_list]
+        coords.append(ring)
+
+    outer_ring = coords[0]
+    poly = Polygon(outer_ring)
+    zones.append({"name": name, "polygon": poly, "count": 0})
+
+    folium.Polygon(
+        locations=outer_ring,
+        popup=name,
+        color="blue",
+        weight=2,
+        fill=True,
+        fill_color="blue",
+        fill_opacity=0.3
+    ).add_to(fmap)
+
+# --- Counters ---
+total_scooters = 0
+available_scooters = 0
+out_of_zones = 0
+
+# --- Battery category counters ---
+black_count = 0
+brown_count = 0
+orange_count = 0
+yellow_count = 0
+green_count = 0
+red_count = 0
+
+# --- Fetch VOI scooters ---
+url = "https://api.entur.io/mobility/v2/gbfs/v2/voibergen/free_bike_status"
+headers = {"ET-Client-Name": "voi-zone-map-script"}
+response = requests.get(url, headers=headers)
+
+if response.status_code == 200:
+    bikes = response.json().get("data", {}).get("bikes", [])
+    total_scooters = len(bikes)
+
+    for bike in bikes:
+        lat = bike["lat"]
+        lon = bike["lon"]
+        battery = bike.get("current_fuel_percent", 0)
+        is_disabled = bike.get("is_disabled", False)
+
+        if not is_disabled:
+            available_scooters += 1
+
+        point = Point(lat, lon)
+        in_zone = False
+        for zone in zones:
+            if zone["polygon"].contains(point):
+                zone["count"] += 1
+                in_zone = True
+                break
+        if not in_zone:
+            out_of_zones += 1
+
+        # --- Choose icon and count category ---
+        if is_disabled and battery > 0.10:
+            icon_path = "scooter_icon_red.png"
+            red_count += 1
+        elif battery < 0.04:
+            icon_path = "scooter_icon_black.png"
+            black_count += 1
+        elif battery < 0.10:
+            icon_path = "scooter_icon_brown.png"
+            brown_count += 1
+        elif battery < 0.25:
+            icon_path = "scooter_icon_orange.png"
+            orange_count += 1
+        elif battery < 0.55:
+            icon_path = "scooter_icon_yellow.png"
+            yellow_count += 1
+        else:
+            icon_path = "scooter_icon_green.png"
+            green_count += 1
+
+        icon = CustomIcon(
+            icon_image=icon_path,
+            icon_size=(30, 30),
+            icon_anchor=(15, 15)
+        )
+
+        popup_text = f"🔋 Battery: {battery * 100:.1f}%<br>Status: {'Disabled' if is_disabled else 'Available'}"
+
+        folium.Marker(
+            location=[lat, lon],
+            popup=popup_text,
+            icon=icon
+        ).add_to(fmap)
+else:
+    print("⚠️ Failed to fetch VOI scooter data:", response.status_code)
+
+# --- Calculate availability percentage ---
+availability_percent = (available_scooters / total_scooters * 100) if total_scooters else 0
+
+# --- Sort zones by count descending ---
+zones_sorted = sorted(zones, key=lambda z: z["count"], reverse=True)
+
+## --- Left box: Zone counts ---
 table_html = f"""
 <div style="
     position: fixed;
@@ -11,7 +140,7 @@ table_html = f"""
     padding: 16px 20px;
     font-family: 'Segoe UI', sans-serif;
     font-size: 14px;
-    max-height: 600px;
+    max-height: 800px;
     overflow-y: auto;
     width: 280px;
     border: 1px solid #eee;
@@ -68,8 +197,8 @@ category_html = f"""
         <tbody>
             <tr><td style="padding: 6px 0;">🖤 <span style='color:#333;'>Critical low &lt; 4%</span></td><td style="text-align: right; font-family: monospace;">{black_count}</td></tr>
             <tr><td style="padding: 6px 0;">🤎 <span style='color:#6e4b3a;'>Superlow 4–10%</span></td><td style="text-align: right; font-family: monospace;">{brown_count}</td></tr>
-            <tr><td style="padding: 6px 0;">🧡 <span style='color:#e67e22;'>One-Trip low10–25%</span></td><td style="text-align: right; font-family: monospace;">{orange_count}</td></tr>
-            <tr><td style="padding: 6px 0;">💛 <span style='color:#f1c40f;'>Low25–55%</span></td><td style="text-align: right; font-family: monospace;">{yellow_count}</td></tr>
+            <tr><td style="padding: 6px 0;">🧡 <span style='color:#e67e22;'>10–25%</span></td><td style="text-align: right; font-family: monospace;">{orange_count}</td></tr>
+            <tr><td style="padding: 6px 0;">💛 <span style='color:#f1c40f;'>25–55%</span></td><td style="text-align: right; font-family: monospace;">{yellow_count}</td></tr>
             <tr><td style="padding: 6px 0;">💚 <span style='color:#27ae60;'>Good &gt; 55%</span></td><td style="text-align: right; font-family: monospace;">{green_count}</td></tr>
             <tr><td style="padding: 6px 0;">🔴 <span style='color:#e74c3c;'>Broken (&gt;10% + disabled)</span></td><td style="text-align: right; font-family: monospace;">{red_count}</td></tr>
         </tbody>
@@ -78,3 +207,7 @@ category_html = f"""
 """
 
 fmap.get_root().html.add_child(Element(category_html))
+
+# --- Save map ---
+fmap.save(output_html)
+print(f"✅ Map saved as '{output_html}' with updated battery categories")
