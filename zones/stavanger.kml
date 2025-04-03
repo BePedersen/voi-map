@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>zone_ops_stav.kml</name>
+    <name>stavanger.kml</name>
     <Style id="poly-0288D1-1000-77-normal">
       <LineStyle>
         <color>ffd18802</color>
