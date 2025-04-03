@@ -1,53 +1,63 @@
 import folium
 import requests
+import os
 import xml.etree.ElementTree as ET
 from shapely.geometry import Point, Polygon
 from folium import Element, CustomIcon
 
 # --- Config ---
-kml_path = "zone_ops.kml"
-output_html = "index.html"
+kml_path = "zones/bergen.kml"
+output_html = "voi-bergen.html"
 map_center = [60.3913, 5.3221]
-
 # --- Create map ---
 fmap = folium.Map(location=map_center, zoom_start=13, zoom_control=False, control_scale=False)
 
-# --- Load KML zones ---
-ns = {'kml': 'http://www.opengis.net/kml/2.2'}
-tree = ET.parse(kml_path)
-root = tree.getroot()
-
 zones = []
-for placemark in root.findall(".//kml:Placemark", ns):
-    name = placemark.find("kml:name", ns).text
-    polygon_elem = placemark.find(".//kml:Polygon", ns)
-    if polygon_elem is None:
-        continue
 
-    coords = []
-    for coord_string in polygon_elem.findall(".//kml:coordinates", ns):
-        coord_list = coord_string.text.strip().split()
-        ring = [(float(c.split(',')[1]), float(c.split(',')[0])) for c in coord_list]
-        coords.append(ring)
+# --- Try to load KML zones ---
+if os.path.exists(kml_path):
+    try:
+        ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+        tree = ET.parse(kml_path)
+        root = tree.getroot()
 
-    outer_ring = coords[0]
-    poly = Polygon(outer_ring)
-    zones.append({"name": name, "polygon": poly, "count": 0})
+        for placemark in root.findall(".//kml:Placemark", ns):
+            name = placemark.find("kml:name", ns).text
+            polygon_elem = placemark.find(".//kml:Polygon", ns)
+            if polygon_elem is None:
+                continue
 
-    folium.Polygon(
-        locations=outer_ring,
-        popup=name,
-        color="blue",
-        weight=2,
-        fill=True,
-        fill_color="blue",
-        fill_opacity=0.3
-    ).add_to(fmap)
+            coords = []
+            for coord_string in polygon_elem.findall(".//kml:coordinates", ns):
+                coord_list = coord_string.text.strip().split()
+                ring = [(float(c.split(',')[1]), float(c.split(',')[0])) for c in coord_list]
+                coords.append(ring)
+
+            outer_ring = coords[0]
+            poly = Polygon(outer_ring)
+            zones.append({"name": name, "polygon": poly, "count": 0})
+
+            folium.Polygon(
+                locations=outer_ring,
+                popup=name,
+                color="blue",
+                weight=2,
+                fill=True,
+                fill_color="blue",
+                fill_opacity=0.3
+            ).add_to(fmap)
+
+    except Exception as e:
+        print(f"⚠️ Could not parse KML file: {e}")
+else:
+    print("⚠️ No KML file found. Proceeding without zones.")
 
 # --- Counters ---
 total_scooters = 0
 available_scooters = 0
 out_of_zones = 0
+battery_total = 0.0  # For average battery
+
 
 # --- Battery category counters ---
 black_count = 0
@@ -58,18 +68,19 @@ green_count = 0
 red_count = 0
 
 # --- Fetch VOI scooters ---
-url = "https://api.entur.io/mobility/v2/gbfs/v2/voibergen/free_bike_status"
+url = "https://api.entur.io/mobility/v2/gbfs/v3/voibergen/vehicle_status"
 headers = {"ET-Client-Name": "voi-zone-map-script"}
 response = requests.get(url, headers=headers)
 
 if response.status_code == 200:
-    bikes = response.json().get("data", {}).get("bikes", [])
+    bikes = response.json().get("data", {}).get("vehicles", [])
     total_scooters = len(bikes)
 
     for bike in bikes:
         lat = bike["lat"]
         lon = bike["lon"]
         battery = bike.get("current_fuel_percent", 0)
+        battery_total += battery
         is_disabled = bike.get("is_disabled", False)
 
         if not is_disabled:
@@ -87,22 +98,22 @@ if response.status_code == 200:
 
         # --- Choose icon and count category ---
         if is_disabled and battery > 0.10:
-            icon_path = "scooter_icon_red.png"
+            icon_path = "icons/scooter_icon_red.png"
             red_count += 1
         elif battery < 0.04:
-            icon_path = "scooter_icon_black.png"
+            icon_path = "icons/scooter_icon_black.png"
             black_count += 1
         elif battery < 0.10:
-            icon_path = "scooter_icon_brown.png"
+            icon_path = "icons/scooter_icon_brown.png"
             brown_count += 1
         elif battery < 0.25:
-            icon_path = "scooter_icon_orange.png"
+            icon_path = "icons/scooter_icon_orange.png"
             orange_count += 1
         elif battery < 0.55:
-            icon_path = "scooter_icon_yellow.png"
+            icon_path = "icons/scooter_icon_yellow.png"
             yellow_count += 1
         else:
-            icon_path = "scooter_icon_green.png"
+            icon_path = "icons/scooter_icon_green.png"
             green_count += 1
 
         icon = CustomIcon(
@@ -119,64 +130,65 @@ if response.status_code == 200:
             icon=icon
         ).add_to(fmap)
 else:
-    print("⚠️ Failed to fetch VOI scooter data:", response.status_code)
+    print("❌ Failed to fetch VOI scooter data:", response.status_code)
 
 # --- Calculate availability percentage ---
 availability_percent = (available_scooters / total_scooters * 100) if total_scooters else 0
+average_battery_percent = (battery_total / total_scooters * 100) if total_scooters else 0
 
 # --- Sort zones by count descending ---
 zones_sorted = sorted(zones, key=lambda z: z["count"], reverse=True)
 
 ## --- Left box: Zone counts ---
-table_html = f"""
-<div style="
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 1000;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    padding: 16px 20px;
-    font-family: 'Segoe UI', sans-serif;
-    font-size: 14px;
-    max-height: 800px;
-    overflow-y: auto;
-    width: 280px;
-    border: 1px solid #eee;
-">
-    <h3 style="margin-top: 0; font-size: 16px; color: #333;">🛴 Scooter Zones</h3>
-    <p style="margin: 4px 0;"><strong>Total scooters:</strong> {total_scooters}</p>
-    <p style="margin: 4px 0;"><strong>Out-of-zone:</strong> {out_of_zones}</p>
-    <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
-        <thead>
-            <tr style="border-bottom: 2px solid #ddd;">
-                <th style="text-align: left; padding: 6px 0; color: #555;">Zone</th>
-                <th style="text-align: right; padding: 6px 0; color: #555;">Count</th>
-            </tr>
-        </thead>
-        <tbody>
-"""
-
-for i, zone in enumerate(zones_sorted):
-    bg = "#f9f9f9" if i % 2 == 0 else "#ffffff"
-    table_html += f"""
-        <tr style="background: {bg};">
-            <td style="padding: 6px 0;">{zone['name']}</td>
-            <td style="padding: 6px 0; text-align: right; font-family: monospace;">{zone['count']}</td>
-        </tr>
+if zones:
+    zone_html = f"""
+    <div style="
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        padding: 16px 20px;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        max-height: 800px;
+        overflow-y: auto;
+        width: 280px;
+        border: 1px solid #eee;
+    ">
+        <h3 style="margin-top: 0; font-size: 16px; color: #333;">🛴 Scooter Zones</h3>
+        <p style="margin: 4px 0;"><strong>Total scooters:</strong> {total_scooters}</p>
+        <p style="margin: 4px 0;"><strong>Out-of-zone:</strong> {out_of_zones}</p>
+        <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ddd;">
+                    <th style="text-align: left; padding: 6px 0; color: #555;">Zone</th>
+                    <th style="text-align: right; padding: 6px 0; color: #555;">Count</th>
+                </tr>
+            </thead>
+            <tbody>
     """
 
-table_html += """
-        </tbody>
-    </table>
-</div>
-"""
+    for i, zone in enumerate(zones_sorted):
+        bg = "#f9f9f9" if i % 2 == 0 else "#ffffff"
+        zone_html += f"""
+            <tr style="background: {bg};">
+                <td style="padding: 6px 0;">{zone['name']}</td>
+                <td style="padding: 6px 0; text-align: right; font-family: monospace;">{zone['count']}</td>
+            </tr>
+        """
 
-fmap.get_root().html.add_child(Element(table_html))
+    zone_html += """
+            </tbody>
+        </table>
+    </div>
+    """
+    fmap.get_root().html.add_child(Element(zone_html))
 
 # --- Right box: Battery stats ---
-category_html = f"""
+battery_html = f"""
 <div style="
     position: fixed;
     top: 20px;
@@ -193,6 +205,7 @@ category_html = f"""
 ">
     <h3 style="margin-top: 0; font-size: 16px; color: #333;">⚡ Battery Stats</h3>
     <p style="margin: 4px 0; color: green;"><strong>Availability:</strong> {availability_percent:.1f}%</p>
+    <p style="margin: 4px 0; color: #333;"><strong>Avg battery:</strong> {average_battery_percent:.1f}%</p>
     <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
         <tbody>
             <tr><td style="padding: 6px 0;"> <span style='color:#333;'>Critical low &lt; 4%</span></td><td style="text-align: right; font-family: monospace;">{black_count}</td></tr>
@@ -205,8 +218,7 @@ category_html = f"""
     </table>
 </div>
 """
-
-fmap.get_root().html.add_child(Element(category_html))
+fmap.get_root().html.add_child(Element(battery_html))
 
 # --- Title box ---
 title_html = """
@@ -226,12 +238,11 @@ title_html = """
     color: #333;
     border: 1px solid #eee;
 ">
-    VOI Fleet Bergen
+    VOI Bergen
 </div>
 """
-
 fmap.get_root().html.add_child(Element(title_html))
 
 # --- Save map ---
 fmap.save(output_html)
-print(f"✅ Map saved as '{output_html}' with updated battery categories")
+print(f"✅ Map saved as '{output_html}' with zone check and battery breakdown.")
