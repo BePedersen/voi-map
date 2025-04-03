@@ -87,7 +87,7 @@ for city in cities_info:
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; font-size: 18px; font-weight: bold;">
             <span>🛴 {data['total']}</span>
             <span>Availability: {data['availability']:.1f}%</span>
-            <span style="color:#e74c3c;">❌ {data['broken']} Broken</span>
+            <span style="color:#e74c3c;">❌ {data['unavailable']} Broken</span>
             <span style="display: flex; align-items: center;">Fleet Battery Level: {battery_bar}</span>
         </div>
     </a>
