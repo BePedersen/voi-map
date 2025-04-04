@@ -4,6 +4,7 @@ import os
 import xml.etree.ElementTree as ET
 from shapely.geometry import Point, Polygon
 from folium import Element, CustomIcon
+from trip_tracker import track_trips 
 
 # --- Config ---
 kml_path = "zones/bergen.kml"
@@ -76,6 +77,9 @@ if response.status_code == 200:
     bikes = response.json().get("data", {}).get("vehicles", [])
     total_scooters = len(bikes)
 
+    # After fetching bikes:
+    trips_today = track_trips(bikes, "bergen")
+
     for bike in bikes:
         lat = bike["lat"]
         lon = bike["lon"]
@@ -135,10 +139,7 @@ else:
 # --- Calculate availability percentage ---
 availability_percent = (available_scooters / total_scooters * 100) if total_scooters else 0
 average_battery_percent = (battery_total / total_scooters * 100) if total_scooters else 0
-from trip_tracker import track_trips 
 
-# After fetching bikes:
-trips_today = track_trips(bikes, "bergen")
 
 # --- Sort zones by count descending ---
 zones_sorted = sorted(zones, key=lambda z: z["count"], reverse=True)
