@@ -45,7 +45,7 @@ def track_trips(bikes, city_id):
         city_data = {"vehicles": {}, "last_reset": now, "trips": 0}
 
     for bike in bikes:
-        bike_id = bike["bike_id"]
+        bike_id = bike["vehicle_id"]
         lat, lon = bike["lat"], bike["lon"]
 
         if bike_id in city_data["vehicles"]:
