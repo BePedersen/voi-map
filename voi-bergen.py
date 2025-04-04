@@ -135,6 +135,10 @@ else:
 # --- Calculate availability percentage ---
 availability_percent = (available_scooters / total_scooters * 100) if total_scooters else 0
 average_battery_percent = (battery_total / total_scooters * 100) if total_scooters else 0
+from trip_tracker import track_trips 
+
+# After fetching bikes:
+trips_today = track_trips(bikes, "bergen")
 
 # --- Sort zones by count descending ---
 zones_sorted = sorted(zones, key=lambda z: z["count"], reverse=True)
@@ -206,6 +210,7 @@ battery_html = f"""
     <h3 style="margin-top: 0; font-size: 16px; color: #333;">⚡ Battery Stats</h3>
     <p style="margin: 4px 0; color: green;"><strong>Availability:</strong> {availability_percent:.1f}%</p>
     <p style="margin: 4px 0; color: #333;"><strong>Avg battery:</strong> {average_battery_percent:.1f}%</p>
+    <p style="margin: 4px 0; color: #333;"><strong>Avg battery:</strong> {trips_today:.1f}%</p>
     <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
         <tbody>
             <tr><td style="padding: 6px 0;"> <span style='color:#333;'>Critical low &lt; 4%</span></td><td style="text-align: right; font-family: monospace;">{black_count}</td></tr>
