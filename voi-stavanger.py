@@ -4,6 +4,7 @@ import os
 import xml.etree.ElementTree as ET
 from shapely.geometry import Point, Polygon
 from folium import Element, CustomIcon
+from trip_tracker import track_trips 
 
 # --- Config ---
 kml_path = "zones/stavanger.kml"
@@ -76,6 +77,9 @@ response = requests.get(url, headers=headers)
 if response.status_code == 200:
     bikes = response.json().get("data", {}).get("vehicles", [])
     total_scooters = len(bikes)
+
+    # After fetching bikes:
+    trips_today = track_trips(bikes, "bergen")
 
     for bike in bikes:
         lat = bike["lat"]
@@ -207,6 +211,7 @@ battery_html = f"""
     <h3 style="margin-top: 0; font-size: 16px; color: #333;">⚡ Battery Stats</h3>
     <p style="margin: 4px 0; color: green;"><strong>Availability:</strong> {availability_percent:.1f}%</p>
     <p style="margin: 4px 0; color: #333;"><strong>Avg battery:</strong> {average_battery_percent:.1f}%</p>
+    <p style="margin: 4px 0; color: #333;"><strong>Trips Today:</strong> {trips_today:}</p>
     <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
         <tbody>
             <tr><td style="padding: 6px 0;"> <span style='color:#333;'>Critical low &lt; 4%</span></td><td style="text-align: right; font-family: monospace;">{black_count}</td></tr>

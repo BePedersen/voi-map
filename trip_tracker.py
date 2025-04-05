@@ -20,16 +20,6 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return R * c
 
 def track_trips(bikes, city_id):
-    """
-    Tracks trips for scooters in a city by comparing current and previous locations.
-    
-    Args:
-        bikes (list): List of bike dicts with 'bike_id', 'lat', 'lon'.
-        city_id (str): Unique identifier for the city, e.g., 'bergen'.
-        
-    Returns:
-        int: Number of detected trips.
-    """
     if not os.path.exists(LOG_FILE_PATH):
         log_data = {}
     else:
@@ -45,17 +35,29 @@ def track_trips(bikes, city_id):
         city_data = {"vehicles": {}, "last_reset": now, "trips": 0}
 
     for bike in bikes:
-        bike_id = bike["vehicle_id"]
+        bike_id = bike.get("vehicle_id") or bike.get("bike_id")
         lat, lon = bike["lat"], bike["lon"]
 
-        if bike_id in city_data["vehicles"]:
-            prev = city_data["vehicles"][bike_id]
+        if not bike_id:
+            print("⚠️ Missing bike ID! Skipping...")
+            continue
+
+        prev = city_data["vehicles"].get(bike_id)
+        if prev:
             distance = haversine_distance(lat, lon, prev["lat"], prev["lon"])
             if distance >= TRIP_DISTANCE_THRESHOLD_METERS:
                 city_data["trips"] += 1
+                print(f"🟢 Trip detected for {bike_id} ({distance:.2f} m)")
 
-        # Update or add current position
+        # Always update or add current position
         city_data["vehicles"][bike_id] = {"lat": lat, "lon": lon}
+
+    log_data[city_id] = city_data
+
+    with open(LOG_FILE_PATH, "w") as f:
+        json.dump(log_data, f, indent=2)
+
+    return city_data["trips"]
 
     log_data[city_id] = city_data
 

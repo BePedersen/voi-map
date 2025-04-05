@@ -48,6 +48,9 @@ def import_city_data(py_file):
             "availability": (module.available_scooters / module.total_scooters) * 100 if module.total_scooters else 0,
             "broken": module.red_count,
             "avg_battery": module.average_battery_percent if hasattr(module, "average_battery_percent") else 0,
+            "trips_today": module.trips_today,
+
+
         }
     except Exception as e:
         print(f"⚠️ Could not import {py_file}: {e}")
@@ -56,6 +59,7 @@ def import_city_data(py_file):
             "availability": 0,
             "broken": 0,
             "avg_battery": 0,
+            "trips_today": 0,
         }
 
 from datetime import datetime, timedelta, timezone
@@ -88,6 +92,8 @@ for city in cities_info:
             <span>🛴 {data['total']}</span>
             <span>Availability: {data['availability']:.1f}%</span>
             <span style="color:#e74c3c;">❌ {data['broken']} unavailable</span>
+            <span style="color:#e74c3c;">❌ {data['trips_today']} Trips Today</span>
+
             <span style="display: flex; align-items: center;">Fleet Battery Level: {battery_bar}</span>
         </div>
     </a>
