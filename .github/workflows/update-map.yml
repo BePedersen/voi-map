@@ -1,8 +1,8 @@
-name: Update Map Every 15 Minutes
+name: Update Map Every 5 Minutes
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
