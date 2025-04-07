@@ -24,7 +24,7 @@ def save_log_data(data):
     with open(LOG_FILE_PATH, "w") as f:
         json.dump(data, f, indent=2)
 
-def track_trips_by_locations(bikes, city_id):
+def track_trips(bikes, city_id):
     """
     Count trips based on the disappearance of scooter coordinates.
     A trip is counted if a lat/lon pair from the last check no longer exists.
