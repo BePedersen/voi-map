@@ -93,7 +93,6 @@ for city in cities_info:
         <div style="font-size: 22px; font-weight: 600; margin-bottom: 10px;">{city['city']}</div>
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; font-size: 18px; font-weight: bold;">
             <span>🛴 {data['total']} Total</span>
-            <span>✅ {available_scooters} Available</span>
             <span>Availability: {data['availability']:.1f}%</span>
             <span style="color:#e74c3c;">❌ {data['broken']} Broken</span>
             <span>🚀 {data['trips_today']} Trips Today</span>

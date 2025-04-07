@@ -209,6 +209,7 @@ battery_html = f"""
     border: 1px solid #eee;
 ">
     <h3 style="margin-top: 0; font-size: 16px; color: #333;">⚡ Battery Stats</h3>
+    <p style="margin: 4px 0; color: green;"><strong>Total scooters:</strong> {total_scooters}%</p>
     <p style="margin: 4px 0; color: green;"><strong>Availability:</strong> {availability_percent:.1f}%</p>
     <p style="margin: 4px 0; color: #333;"><strong>Avg battery:</strong> {average_battery_percent:.1f}%</p>
     <p style="margin: 4px 0; color: #333;"><strong>Trips Today:</strong> {trips_today}</p>
@@ -220,6 +221,8 @@ battery_html = f"""
             <tr><td style="padding: 6px 0;"> <span style='color:#f1c40f;'>25–55%</span></td><td style="text-align: right; font-family: monospace;">{yellow_count}</td></tr>
             <tr><td style="padding: 6px 0;"> <span style='color:#27ae60;'>Good &gt; 55%</span></td><td style="text-align: right; font-family: monospace;">{green_count}</td></tr>
             <tr><td style="padding: 6px 0;"> <span style='color:#e74c3c;'>Broken (&gt;10% + disabled)</span></td><td style="text-align: right; font-family: monospace;">{red_count}</td></tr>
+            <tr><td style="padding: 6px 0;"> <span style='color:#e74c3c;'>Available: (&gt;10% + disabled)</span></td><td style="text-align: right; font-family: monospace;">{available_scooters}</td></tr>
+
         </tbody>
     </table>
 </div>
