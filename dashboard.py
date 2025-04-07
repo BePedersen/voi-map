@@ -1,11 +1,11 @@
 import importlib.util
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
-# Define cities and their Python script filenames
+# --- City Configuration ---
 cities_info = [
-    {"slug": "bergen", "city": "Bergen", "file": "voi-bergen.py"},    
-    {"slug": "oslo", "city": "Oslo", "file": "voi-oslo.py"},    
+    {"slug": "bergen", "city": "Bergen", "file": "voi-bergen.py"},
+    {"slug": "oslo", "city": "Oslo", "file": "voi-oslo.py"},
     {"slug": "stavanger", "city": "Stavanger", "file": "voi-stavanger.py"},
     {"slug": "trondheim", "city": "Trondheim", "file": "voi-trondheim.py"},
     {"slug": "kristiansand", "city": "Kristiansand", "file": "voi-kristiansand.py"},
@@ -13,6 +13,7 @@ cities_info = [
     {"slug": "moss", "city": "Moss", "file": "voi-moss.py"},
 ]
 
+# --- Battery Bar Component ---
 def render_battery_bar(percent):
     filled_width = int(percent)
     return f"""
@@ -37,6 +38,7 @@ def render_battery_bar(percent):
     </div>
     """
 
+# --- Dynamic Python Data Import ---
 def import_city_data(py_file):
     try:
         module_name = os.path.splitext(py_file)[0]
@@ -48,9 +50,7 @@ def import_city_data(py_file):
             "availability": (module.available_scooters / module.total_scooters) * 100 if module.total_scooters else 0,
             "broken": module.red_count,
             "avg_battery": module.average_battery_percent if hasattr(module, "average_battery_percent") else 0,
-            "trips_today": module.trips_today,
-
-
+            "trips_today": module.trips_today if hasattr(module, "trips_today") else 0,
         }
     except Exception as e:
         print(f"⚠️ Could not import {py_file}: {e}")
@@ -62,14 +62,17 @@ def import_city_data(py_file):
             "trips_today": 0,
         }
 
-from datetime import datetime, timedelta, timezone
+# --- Timestamp (GMT+2) ---
 gmt_plus_2 = timezone(timedelta(hours=2))
 timestamp = datetime.now(gmt_plus_2).strftime("%-d.%-m.%Y, %H:%M:%S")
 
+# --- Assemble HTML Cards for Each City ---
 buttons_html = ""
 for city in cities_info:
     data = import_city_data(city["file"])
+    available_scooters = int(data["availability"] * data["total"] / 100)
     battery_bar = render_battery_bar(data["avg_battery"])
+
     buttons_html += f"""
     <a href="voi-{city['slug']}.html" style="
         display: block;
@@ -89,16 +92,17 @@ for city in cities_info:
     " onmouseover="this.style.background='#3c5d75'" onmouseout="this.style.background='#34495e'">
         <div style="font-size: 22px; font-weight: 600; margin-bottom: 10px;">{city['city']}</div>
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; font-size: 18px; font-weight: bold;">
-            <span>🛴 {data['total']}</span>
+            <span>🛴 {data['total']} Total</span>
+            <span>✅ {available_scooters} Available</span>
             <span>Availability: {data['availability']:.1f}%</span>
-            <span style="color:#e74c3c;">❌ {data['broken']} unavailable</span>
-            <span> {data['trips_today']} Trips Today</span>
-
+            <span style="color:#e74c3c;">❌ {data['broken']} Broken</span>
+            <span>🚀 {data['trips_today']} Trips Today</span>
             <span style="display: flex; align-items: center;">Fleet Battery Level: {battery_bar}</span>
         </div>
     </a>
     """
 
+# --- Full HTML Page ---
 html = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -131,11 +135,12 @@ html = f"""
 <body>
     <h1>🛴 VOI Fleet Dashboard – Norway</h1>
     {buttons_html}
-    <div class="timestamp">Last updated: {timestamp}</div>
+    <div class="timestamp">Last updated: {timestamp} GMT+2</div>
 </body>
 </html>
 """
 
+# --- Save to file ---
 with open("index.html", "w") as f:
     f.write(html)
 
