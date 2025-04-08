@@ -95,7 +95,6 @@ for city in cities_info:
             <span>🛴 {data['total']} Total</span>
             <span>Availability: {data['availability']:.1f}%</span>
             <span style="color:#e74c3c;">❌ {data['broken']} Broken</span>
-            <span>🚀 {data['trips_today']} Trips Today</span>
             <span style="display: flex; align-items: center;">Fleet Battery Level: {battery_bar}</span>
         </div>
     </a>
